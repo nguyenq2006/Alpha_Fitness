@@ -9,6 +9,8 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -19,8 +21,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
@@ -29,7 +34,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 
 
 
-public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCallback{
+public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCallback, LocationSource.OnLocationChangedListener{
     //reference to component view
     private TextView distance_view;
     private TextView time_view;
@@ -42,6 +47,19 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 20;
     private String provider;
     private Polyline polyline;
+    private Location mLocation;
+    public static LocationSource.OnLocationChangedListener mListener;
+    private LocationSource mLocationSource = new LocationSource() {
+        @Override
+        public void activate(LocationSource.OnLocationChangedListener onLocationChangedListener) {
+            mListener = onLocationChangedListener;
+        }
+
+        @Override
+        public void deactivate() {
+            mListener = null;
+        }
+    };
 
     private android.os.Handler mHandler;
     private StopWatch  stopWatch;
@@ -85,6 +103,11 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 //        locationTracking = new ArrayList<>();
+
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        String provider = locationManager.getBestProvider(criteria, true);
+        mLocation = locationManager.getLastKnownLocation(provider);
     }
 
     @Override
@@ -94,6 +117,18 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
         receiver = new ResponseReceiver();
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
         localBroadcastManager.registerReceiver(receiver, broadcastFilter);
+
+
+    }
+
+    @Override
+    public void onDestroy(){
+        super.onDestroy();
+
+        WorkoutService.initializeService(this);
+        Intent workoutService = new Intent(this, WorkoutService.class);
+        stopService(workoutService);
+
     }
     //Runnable object for stop watch
     private Runnable workoutStartedRunnable = new Runnable() {
@@ -126,6 +161,8 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
         WorkoutService.initializeService(this);
         Intent workoutService = new Intent(this, WorkoutService.class);
         startService(workoutService);
+
+        mLocationSource.activate(this);
     }
 
     public void stopStopWatch(View view){
@@ -138,6 +175,11 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
         stopWatch.resetWatchTime();
 
         stopService(new Intent(this, WorkoutService.class));
+        mLocationSource.deactivate();
+
+        WorkoutService.initializeService(this);
+        Intent workoutService = new Intent(this, WorkoutService.class);
+        stopService(workoutService);
     }
 
     @Override
@@ -159,10 +201,11 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
         }
 
         mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
-
-
-//
-
+        mMap.setMyLocationEnabled(true);
+        if(mLocation!=null){
+            LatLng current = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, 15.0f));
+        }
     }
 
 
@@ -180,13 +223,22 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
         polyline = mMap.addPolyline(options);
     }
 
+    @Override
+    public void onLocationChanged(Location location) {
+        mLocation = location;
+        LatLng current = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, 15.0f));
+    }
+
+
     public class ResponseReceiver extends BroadcastReceiver {
 
         public static final String LOCAL_ACTION = "Workout Update";
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            String totalDistance = intent.getStringExtra("Total Distance");
+            Bundle extras = intent.getExtras();
+            String totalDistance = extras.getString("Total Distance");
             distance_view.setText(totalDistance);
             drawPolyline();
         }

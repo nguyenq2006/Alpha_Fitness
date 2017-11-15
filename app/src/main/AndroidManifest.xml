@@ -44,7 +44,7 @@
 
         </activity>
 
-        <service android:name=".WorkoutService" />
+        <service android:name=".WorkoutService"></service>
     </application>
 
 </manifest>
