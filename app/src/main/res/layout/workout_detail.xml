@@ -11,178 +11,119 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <TableRow
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal"
-            android:orientation="horizontal">
+            android:layout_height="wrap_content">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/workout_details"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:background="@android:color/darker_gray"
+                android:padding="10dp"
+                android:text="Workout Details"
+                android:textSize="20sp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Workout \nDetails"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    />
-            </LinearLayout>
-
-            <View
-                android:layout_width="1dp"
-                android:layout_marginRight="2dp"
-                android:layout_height="fill_parent"
-                android:background="@android:color/darker_gray" />
-
-            <!-- AVERAGE TIME -->
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/avg"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@+id/workout_details"
+                android:paddingLeft="10dp"
+                android:text="AVG" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="10sp"
-                    android:layout_marginLeft="5dp"
-                    android:textColor="@android:color/black"
-                    android:text="AVG:"/>
-
-            </LinearLayout>
-
-
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/workout_duration"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@+id/avg"
+                android:paddingLeft="10dp"
+                android:text="3:41"
+                android:textSize="30sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="18sp"
-                    android:text="3:41"/>
+            <TextView
+                android:id="@+id/min_per_mile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/avg"
+                android:layout_toEndOf="@+id/workout_duration"
+                android:text="min/mi" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textSize="13sp"
-                    android:layout_marginRight="12dp"
-                    android:text="min/km"/>
+            <TextView
+                android:id="@+id/max"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MAX"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@+id/min_per_mile"
+                android:layout_marginStart="15dp" />
 
-            </LinearLayout>
+            <TextView
+                android:id="@+id/min"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="MIN"
+                android:layout_below="@+id/max"
+                android:layout_alignStart="@+id/max" />
 
-            <!-- END OF AVERAGE TIME -->
+            <TextView
+                android:id="@+id/textView8"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:text="min/mi"
+                android:layout_alignBottom="@+id/max"
+                android:layout_toEndOf="@+id/max_time" />
 
-            <View
-                android:layout_width="1dp"
-                android:layout_height="fill_parent"
-                android:layout_marginLeft="10dp"/>
+            <TextView
+                android:id="@+id/textView9"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="min/mi"
+                android:layout_below="@+id/max_time"
+                android:layout_toEndOf="@+id/min_time" />
 
-            <!-- MAX AND MIN -->
-            <TableLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/max_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1:57"
+                android:textSize="20sp"
+                android:layout_alignParentTop="true"
+                android:layout_toEndOf="@+id/max"
+                android:layout_marginStart="34dp" />
 
-                <TableRow
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+            <TextView
+                android:id="@+id/min_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignStart="@+id/max_time"
+                android:layout_alignTop="@+id/textView9"
+                android:text="6:50"
+                android:textSize="20sp"/>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="MAX"
-                        android:layout_marginLeft="5dp"
-                        android:autoSizeMaxTextSize="15sp"/>
+        </RelativeLayout>
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textSize="15sp"
-                            android:layout_marginLeft="10dp"
-                            android:text="1:57"/>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textSize="15sp"
-                            android:layout_marginLeft="10dp"
-                            android:text="min/km"/>
-
-                    </LinearLayout>
-
-
-                </TableRow>
-
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp" />
-
-
-                <TableRow
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="left"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="MIN"
-                        android:layout_marginLeft="5dp"
-                        android:autoSizeMaxTextSize="15sp"/>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textSize="15sp"
-                            android:layout_marginLeft="10dp"
-                            android:text="7:34"/>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textSize="15sp"
-                            android:layout_marginLeft="10dp"
-                            android:text="min/km"/>
-
-                    </LinearLayout>
-
-                </TableRow>
-            </TableLayout>
-
-            <!-- END OF MAX AND MIN -->
-
-        </TableRow>
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@android:color/darker_gray"/>
+            android:background="@android:color/darker_gray" />
 
         <RelativeLayout
-            android:layout_below="@+id/workout_details_table_layout"
             android:id="@+id/layout_chartContainer"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            >
+            android:layout_below="@+id/workout_details_table_layout">
 
             <com.github.mikephil.charting.charts.BarChart
-                android:id="@+id/chart1"
+                android:id="@+id/chart"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_above="@+id/seekBar1" />
@@ -194,8 +135,8 @@
                 android:layout_alignParentBottom="true"
                 android:layout_alignParentLeft="true"
                 android:layout_margin="8dp"
-                android:layout_toLeftOf="@+id/tvYMax"
                 android:layout_marginRight="5dp"
+                android:layout_toLeftOf="@+id/tvYMax"
                 android:max="200"
                 android:paddingBottom="12dp" />
 
@@ -206,8 +147,8 @@
                 android:layout_above="@+id/seekBar2"
                 android:layout_margin="8dp"
                 android:layout_marginBottom="35dp"
-                android:layout_toLeftOf="@+id/tvXMax"
                 android:layout_marginRight="5dp"
+                android:layout_toLeftOf="@+id/tvXMax"
                 android:max="1500"
                 android:paddingBottom="12dp" />
 
@@ -217,10 +158,10 @@
                 android:layout_height="wrap_content"
                 android:layout_alignBottom="@+id/seekBar1"
                 android:layout_alignParentRight="true"
-                android:text="500"
                 android:layout_marginBottom="15dp"
                 android:layout_marginRight="10dp"
                 android:gravity="right"
+                android:text="500"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
             <TextView
@@ -229,15 +170,14 @@
                 android:layout_height="wrap_content"
                 android:layout_alignBottom="@+id/seekBar2"
                 android:layout_alignParentRight="true"
-                android:text="500"
                 android:layout_marginBottom="15dp"
                 android:layout_marginRight="10dp"
                 android:gravity="right"
+                android:text="500"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
 
         </RelativeLayout>
-
 
 
     </TableLayout>

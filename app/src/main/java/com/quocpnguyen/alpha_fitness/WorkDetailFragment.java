@@ -6,6 +6,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.github.mikephil.charting.charts.BarChart;
+import com.github.mikephil.charting.data.BarData;
+
 /**
  * Created by cs on 11/13/17.
  */
@@ -14,7 +17,14 @@ public class WorkDetailFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View workout_detail = inflater.inflate(R.layout.workout_detail, container);
+        View workout_detail = inflater.inflate(R.layout.workout_detail, container, false);
+        BarChart chart = (BarChart) workout_detail.findViewById(R.id.chart);
+
+//        BarData data = new BarData(getXAxisValues(), getDataSet());
+//        chart.setData(data);
+//        chart.setDescription("My Chart");
+//        chart.animateXY(2000, 2000);
+//        chart.invalidate();
         return workout_detail;
     }
 

@@ -49,12 +49,14 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     private long steps = 0;
     private Sensor stepSensor;
     private SensorManager sManager;
+    private static WorkoutService workoutService;
 
 
 
     public static void initializeService(Context context){
         WorkoutService.mContext = context;
         totalDist = 0;
+        workoutService = new WorkoutService();
     }
 
     @Override
@@ -110,9 +112,6 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Toast.makeText(this, "Service Destroyed", Toast.LENGTH_LONG).show();
-        locationManager.removeUpdates(WorkoutService.this);
-        sManager.unregisterListener(this, stepSensor);
     }
 
 
@@ -187,5 +186,15 @@ public class WorkoutService extends Service implements LocationListener, Locatio
 
     private double toMiles(float meter){
         return (double) (meter/1609.344);
+    }
+
+    public void stopTracking(){
+        Toast.makeText(this, "Service Destroyed", Toast.LENGTH_LONG).show();
+        locationManager.removeUpdates(WorkoutService.this);
+        sManager.unregisterListener(this, stepSensor);
+    }
+
+    public static WorkoutService getInstance(){
+        return workoutService;
     }
 }

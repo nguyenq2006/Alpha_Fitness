@@ -6,35 +6,35 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.graphics.Color;
 import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentManager;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.LocationSource;
+import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import static android.content.Context.LOCATION_SERVICE;
 
 
-public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCallback, LocationSource.OnLocationChangedListener{
+public class WorkoutActivity extends Fragment implements LocationSource.OnLocationChangedListener{
+    private Context mContext;
     //reference to component view
     private TextView distance_view;
     private TextView time_view;
@@ -68,54 +68,67 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
     private BroadcastReceiver receiver;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_workout);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View workout_detail = inflater.inflate(R.layout.activity_workout, container, false);
+        mContext = workout_detail.getContext();
+        distance_view = (TextView) workout_detail.findViewById(R.id.distance);
+        time_view = (TextView) workout_detail.findViewById(R.id.time_view);
+        start_bttn = (Button) workout_detail.findViewById(R.id.start_bttn);
+        start_bttn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startStopWatch();
+            }
+        });
 
-        if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            FragmentManager fm= getSupportFragmentManager();
-            fm.beginTransaction()
-                    .add(new WorkDetailFragment(), "WorkoutDetail")
-            .commit();
-        }
+        stop_bttn = (Button) workout_detail.findViewById(R.id.stop_bttn);
+        stop_bttn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                stopStopWatch();
+            }
+        });
 
-        distance_view = (TextView) findViewById(R.id.distance);
-        time_view = (TextView) findViewById(R.id.time_view);
-        start_bttn = (Button) findViewById(R.id.start_bttn);
-        stop_bttn = (Button) findViewById(R.id.stop_bttn);
-
-        mHandler = new android.os.Handler();
-        stopWatch = StopWatch.getInstance();
-
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        provider = locationManager.getBestProvider(new Criteria(), true);
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
+            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
 
         }
 
         // Get the SupportMapFragment and request notification
         // when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+        MapView mapView = (MapView) workout_detail.findViewById(R.id.map);
+        mapView.onCreate(savedInstanceState);
+        mapView.onResume();
+        mapView.getMapAsync(new MapListener());
+        return workout_detail;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        mHandler = new android.os.Handler();
+        stopWatch = StopWatch.getInstance();
+
+        ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
+        locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
+        provider = locationManager.getBestProvider(new Criteria(), true);
 //        locationTracking = new ArrayList<>();
 
-        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        LocationManager locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
         Criteria criteria = new Criteria();
         String provider = locationManager.getBestProvider(criteria, true);
         mLocation = locationManager.getLastKnownLocation(provider);
     }
 
     @Override
-    protected void onResume(){
+    public void onResume(){
         super.onResume();
         IntentFilter broadcastFilter = new IntentFilter(ResponseReceiver.LOCAL_ACTION);
         receiver = new ResponseReceiver();
-        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(mContext);
         localBroadcastManager.registerReceiver(receiver, broadcastFilter);
 
 
@@ -125,9 +138,9 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
     public void onDestroy(){
         super.onDestroy();
 
-        WorkoutService.initializeService(this);
-        Intent workoutService = new Intent(this, WorkoutService.class);
-        stopService(workoutService);
+        WorkoutService.initializeService(mContext);
+        Intent workoutService = new Intent(getActivity(), WorkoutService.class);
+        getActivity().stopService(workoutService);
 
     }
     //Runnable object for stop watch
@@ -149,7 +162,7 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
     };
 
 
-    public void startStopWatch(View view){
+    public void startStopWatch(){
         stop_bttn.setEnabled(true);
         start_bttn.setEnabled(false);
         stop_bttn.setVisibility(View.VISIBLE);
@@ -158,14 +171,14 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
         stopWatch.setStartTime(SystemClock.uptimeMillis());
         mHandler.post(workoutStartedRunnable);
 
-        WorkoutService.initializeService(this);
-        Intent workoutService = new Intent(this, WorkoutService.class);
-        startService(workoutService);
+        WorkoutService.initializeService(mContext);
+        Intent workoutService = new Intent(getActivity(), WorkoutService.class);
+        getActivity().startService(workoutService);
 
         mLocationSource.activate(this);
     }
 
-    public void stopStopWatch(View view){
+    public void stopStopWatch(){
         stop_bttn.setEnabled(false);
         start_bttn.setEnabled(true);
         stop_bttn.setVisibility(View.INVISIBLE);
@@ -174,37 +187,20 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
         mHandler.removeCallbacks(workoutStartedRunnable);
         stopWatch.resetWatchTime();
 
-        stopService(new Intent(this, WorkoutService.class));
+        getActivity().stopService(new Intent(getActivity(), WorkoutService.class));
         mLocationSource.deactivate();
 
-        WorkoutService.initializeService(this);
-        Intent workoutService = new Intent(this, WorkoutService.class);
-        stopService(workoutService);
+        WorkoutService.getInstance().stopTracking();
+
+        WorkoutService.initializeService(mContext);
+        Intent workoutService = new Intent(getActivity(), WorkoutService.class);
+        getActivity().stopService(workoutService);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION && grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-        }
-    }
-
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        // Add a marker in Sydney, Australia,
-        // and move the map's camera to the same location.
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
-        }
-
-        mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
-        mMap.setMyLocationEnabled(true);
-        if(mLocation!=null){
-            LatLng current = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, 15.0f));
         }
     }
 
@@ -241,6 +237,28 @@ public class WorkoutActivity extends AppCompatActivity implements OnMapReadyCall
             String totalDistance = extras.getString("Total Distance");
             distance_view.setText(totalDistance);
             drawPolyline();
+        }
+    }
+
+    private class MapListener implements OnMapReadyCallback{
+
+        @Override
+        public void onMapReady(GoogleMap googleMap) {
+            mMap = googleMap;
+            // Add a marker in Sydney, Australia,
+            // and move the map's camera to the same location.
+
+            if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
+            }
+
+            mMap.setMapType(GoogleMap.MAP_TYPE_TERRAIN);
+            mMap.setMyLocationEnabled(true);
+            if(mLocation!=null){
+                LatLng current = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, 15.0f));
+            }
         }
     }
 }
