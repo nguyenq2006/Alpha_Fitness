@@ -40,9 +40,10 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
     private TextView time_view;
     private Button start_bttn;
     private Button stop_bttn;
+    private MapView mapView;
 
     //variable for map view
-    private GoogleMap mMap;
+    private static GoogleMap mMap;
     private LocationManager locationManager;
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 20;
     private String provider;
@@ -78,7 +79,7 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
         start_bttn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startStopWatch();
+                startWorkout();
             }
         });
 
@@ -86,7 +87,7 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
         stop_bttn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                stopStopWatch();
+                stopWorkout();
             }
         });
 
@@ -98,7 +99,7 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
 
         // Get the SupportMapFragment and request notification
         // when the map is ready to be used.
-        MapView mapView = (MapView) workout_detail.findViewById(R.id.map);
+        mapView = (MapView) workout_detail.findViewById(R.id.map);
         mapView.onCreate(savedInstanceState);
         mapView.onResume();
         mapView.getMapAsync(new MapListener());
@@ -126,12 +127,15 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
     @Override
     public void onResume(){
         super.onResume();
-        IntentFilter broadcastFilter = new IntentFilter(ResponseReceiver.LOCAL_ACTION);
-        receiver = new ResponseReceiver();
-        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(mContext);
-        localBroadcastManager.registerReceiver(receiver, broadcastFilter);
 
-
+        if(stopWatch.isRunning()){
+            stop_bttn.setEnabled(true);
+            start_bttn.setEnabled(false);
+            stop_bttn.setVisibility(View.VISIBLE);
+            start_bttn.setVisibility(View.INVISIBLE);
+            mHandler.post(workoutStartedRunnable);
+            drawPolyline();
+        }
     }
 
     @Override
@@ -162,7 +166,7 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
     };
 
 
-    public void startStopWatch(){
+    public void startWorkout(){
         stop_bttn.setEnabled(true);
         start_bttn.setEnabled(false);
         stop_bttn.setVisibility(View.VISIBLE);
@@ -176,9 +180,13 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
         getActivity().startService(workoutService);
 
         mLocationSource.activate(this);
+        receiver = new ResponseReceiver();
+        IntentFilter broadcastFilter = new IntentFilter(ResponseReceiver.LOCAL_ACTION);
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(mContext);
+        localBroadcastManager.registerReceiver(receiver, broadcastFilter);
     }
 
-    public void stopStopWatch(){
+    public void stopWorkout(){
         stop_bttn.setEnabled(false);
         start_bttn.setEnabled(true);
         stop_bttn.setVisibility(View.INVISIBLE);
@@ -195,6 +203,8 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
         WorkoutService.initializeService(mContext);
         Intent workoutService = new Intent(getActivity(), WorkoutService.class);
         getActivity().stopService(workoutService);
+
+        receiver = null;
     }
 
     @Override

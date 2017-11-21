@@ -10,6 +10,7 @@ public class StopWatch {
     private long mStartTime;
     private long mTimeUpdate;
     private long mStoreTime;
+    private boolean isRunning;
 
     private StopWatch(){
         mStartTime = 0L;
@@ -25,6 +26,7 @@ public class StopWatch {
         mStartTime = 0L;
         mTimeUpdate = 0L;
         mStoreTime = 0L;
+        isRunning=false;
     }
 
     public long getStartTime() {
@@ -33,6 +35,7 @@ public class StopWatch {
 
     public void setStartTime(long mStartTime) {
         this.mStartTime = mStartTime;
+        isRunning=true;
     }
 
     public long getStoreTime() {
@@ -49,5 +52,9 @@ public class StopWatch {
 
     public void setTimeUpdate(long mTimeUpdate) {
         this.mTimeUpdate = mTimeUpdate;
+    }
+
+    public boolean isRunning() {
+        return isRunning;
     }
 }
