@@ -1,11 +1,8 @@
 package com.quocpnguyen.alpha_fitness;
 
-import android.Manifest;
-import android.app.IntentService;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -18,18 +15,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdate;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Polyline;
 import com.quocpnguyen.alpha_fitness.StepCounterUtil.StepDetector;
 import com.quocpnguyen.alpha_fitness.StepCounterUtil.StepListener;
 
@@ -47,8 +38,8 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     private static Context mContext;
     private Handler mHandler;
 
-    private static float totalDist;
-    private int steps = 0;
+    private double totalDist;
+    private int steps;
     private static WorkoutService workoutService;
 
     private StepDetector simpleStepDetector;
@@ -59,7 +50,6 @@ public class WorkoutService extends Service implements LocationListener, Locatio
 
     public static void initializeService(Context context){
         WorkoutService.mContext = context;
-        totalDist = 0;
         workoutService = new WorkoutService();
     }
 
@@ -85,6 +75,8 @@ public class WorkoutService extends Service implements LocationListener, Locatio
             }
         });
 
+        steps = 0;
+        totalDist = 0;
         locationManager = (LocationManager) mContext.getSystemService(LOCATION_SERVICE);
         provider = locationManager.getBestProvider(new Criteria(), true);
         locationManager.requestLocationUpdates(provider, 0, 0, WorkoutService.this);
@@ -126,7 +118,7 @@ public class WorkoutService extends Service implements LocationListener, Locatio
         if(!locationTracking.contains(point)){
             locationTracking.add(point);
             Intent broadcastIntent = new Intent();
-            broadcastIntent.setAction(WorkoutActivity.ResponseReceiver.LOCAL_ACTION);
+            broadcastIntent.setAction(WorkoutFragment.ResponseReceiver.LOCAL_ACTION);
             String distance = String.format("%.2f",calculateDistance());
             broadcastIntent.putExtra("Total Distance", distance);
             LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
@@ -150,15 +142,17 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     }
 
     private double calculateDistance(){
-        int size = locationTracking.size();
-        if(size > 2){
-            float[] result = new float[2];
-            LatLng prev = locationTracking.get(size-2);
-            LatLng cur = locationTracking.get(size-1);
-            Location.distanceBetween(prev.latitude, prev.longitude, cur.latitude, cur.longitude, result);
-            totalDist += result[0];
-        }
-        return toMiles(totalDist);
+//        int size = locationTracking.size();
+//        if(size > 2){
+//            float[] result = new float[2];
+//            LatLng prev = locationTracking.get(size-2);
+//            LatLng cur = locationTracking.get(size-1);
+//            Location.distanceBetween(prev.latitude, prev.longitude, cur.latitude, cur.longitude, result);
+//            totalDist += result[0];
+//        }
+//        return toMiles(totalDist);
+        totalDist =  steps/2325.0; //2325 avg steps/mi
+        return totalDist;
     }
 
     @Override
@@ -193,5 +187,6 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     @Override
     public void step(long timeNs) {
         steps++;
+        Log.d(WorkoutService.class.getSimpleName(), "Step Counter: " + steps);
     }
 }

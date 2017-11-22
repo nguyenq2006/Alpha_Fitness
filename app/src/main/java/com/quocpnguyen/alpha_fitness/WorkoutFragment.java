@@ -19,6 +19,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -33,7 +34,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import static android.content.Context.LOCATION_SERVICE;
 
 
-public class WorkoutActivity extends Fragment implements LocationSource.OnLocationChangedListener{
+public class WorkoutFragment extends Fragment implements LocationSource.OnLocationChangedListener{
     private Context mContext;
     //reference to component view
     private TextView distance_view;
@@ -41,6 +42,7 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
     private Button start_bttn;
     private Button stop_bttn;
     private MapView mapView;
+    private ImageView imageView;
 
     //variable for map view
     private static GoogleMap mMap;
@@ -71,10 +73,19 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View workout_detail = inflater.inflate(R.layout.activity_workout, container, false);
+        View workout_detail = inflater.inflate(R.layout.workout_fragment, container, false);
         mContext = workout_detail.getContext();
         distance_view = (TextView) workout_detail.findViewById(R.id.distance);
         time_view = (TextView) workout_detail.findViewById(R.id.time_view);
+
+        imageView = (ImageView) workout_detail.findViewById(R.id.profile);
+        imageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getActivity(), ProfileActivity.class);
+                getActivity().startActivity(intent);
+            }
+        });
         start_bttn = (Button) workout_detail.findViewById(R.id.start_bttn);
         start_bttn.setOnClickListener(new View.OnClickListener() {
             @Override

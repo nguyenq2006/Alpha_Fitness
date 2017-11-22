@@ -21,11 +21,10 @@
             android:paddingRight="30dp"
             android:textSize="28sp"/>
 
-        <ImageButton
+        <ImageView
             android:id="@+id/profile"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingLeft="20dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
             android:src="@drawable/ic_account_circle_black_24dp"/>
     </LinearLayout>
 
@@ -115,9 +114,10 @@
     <com.google.android.gms.maps.MapView
         android:id="@+id/map"
         android:layout_width="match_parent"
-        android:layout_height="260dp"
+        android:layout_height="300dp"
         android:layout_below="@+id/info"
-        android:layout_alignParentStart="true" />
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="13dp" />
 
     <Button
         android:id="@+id/start_bttn"
