@@ -21,6 +21,9 @@ import android.widget.Toast;
 
 import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.model.LatLng;
+import com.quocpnguyen.alpha_fitness.DatabaseManagment.DatabaseManager;
+import com.quocpnguyen.alpha_fitness.DatabaseManagment.WorkoutRecord;
+import com.quocpnguyen.alpha_fitness.GraphUtil.GraphData;
 import com.quocpnguyen.alpha_fitness.StepCounterUtil.StepDetector;
 import com.quocpnguyen.alpha_fitness.StepCounterUtil.StepListener;
 
@@ -32,6 +35,7 @@ import java.util.ArrayList;
 
 public class WorkoutService extends Service implements LocationListener, LocationSource.OnLocationChangedListener, SensorEventListener, StepListener {
 
+    private static WorkoutService workoutService;
     private static LocationManager locationManager;
     private String provider;
     public static ArrayList<LatLng> locationTracking;
@@ -39,11 +43,11 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     private Handler mHandler;
 
     private double totalDist;
-    private int steps;
-    private static WorkoutService workoutService;
+    private static int steps;
+
 
     private StepDetector simpleStepDetector;
-    private SensorManager sensorManager;
+    private static SensorManager sensorManager;
     private Sensor accel;
 
 
@@ -57,7 +61,6 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     public void onCreate() {
         super.onCreate();
         mHandler = new Handler();
-        locationTracking = new ArrayList<>();
     }
 
     @Nullable
@@ -77,8 +80,10 @@ public class WorkoutService extends Service implements LocationListener, Locatio
 
         steps = 0;
         totalDist = 0;
+        locationTracking = new ArrayList<>();
         locationManager = (LocationManager) mContext.getSystemService(LOCATION_SERVICE);
         provider = locationManager.getBestProvider(new Criteria(), true);
+
         locationManager.requestLocationUpdates(provider, 0, 0, WorkoutService.this);
 
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -117,12 +122,6 @@ public class WorkoutService extends Service implements LocationListener, Locatio
         LatLng point = new LatLng(latitude, longtitude);
         if(!locationTracking.contains(point)){
             locationTracking.add(point);
-            Intent broadcastIntent = new Intent();
-            broadcastIntent.setAction(WorkoutFragment.ResponseReceiver.LOCAL_ACTION);
-            String distance = String.format("%.2f",calculateDistance());
-            broadcastIntent.putExtra("Total Distance", distance);
-            LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
-            localBroadcastManager.sendBroadcast(broadcastIntent);
         }
     }
 
@@ -141,18 +140,23 @@ public class WorkoutService extends Service implements LocationListener, Locatio
 
     }
 
-    private double calculateDistance(){
-//        int size = locationTracking.size();
-//        if(size > 2){
-//            float[] result = new float[2];
-//            LatLng prev = locationTracking.get(size-2);
-//            LatLng cur = locationTracking.get(size-1);
-//            Location.distanceBetween(prev.latitude, prev.longitude, cur.latitude, cur.longitude, result);
-//            totalDist += result[0];
-//        }
-//        return toMiles(totalDist);
-        totalDist =  steps/2325.0; //2325 avg steps/mi
+    public double calculateDistance(){
+        //TODO: calculate total distance using 2325 steps per mi
+//        totalDist =  steps/2325.0; //2325 avg steps/mi
+
+        //test
+        totalDist = (double) steps/(2325/100);
         return totalDist;
+    }
+
+    public double calculateCalories(){
+        //TODO remove '*100'
+        return (double) steps*100*23/1000;
+    }
+
+    public void stepsCalGraph(){
+        GraphData graph = GraphData.getInstance();
+        graph.addData(calculateCalories(), steps);
     }
 
     @Override
@@ -168,16 +172,22 @@ public class WorkoutService extends Service implements LocationListener, Locatio
 
     }
 
-    private double toMiles(float meter){
-        return (double) (meter/1609.344);
-    }
-
     public void stopTracking(){
         Toast.makeText(mContext, "Service Destroyed", Toast.LENGTH_LONG).show();
         locationManager.removeUpdates(WorkoutService.this);
         sensorManager.unregisterListener(WorkoutService.this);
-        stopSelf();
 
+        DatabaseManager db = DatabaseManager.getInstance();
+
+        //TODO remove '* 100'
+        StopWatch stopWatch = StopWatch.getInstance();
+        WorkoutRecord data = new WorkoutRecord(steps*100, calculateDistance(),
+                stopWatch.getTimeUpdate(), (int) calculateCalories());
+        db.insertData(data);
+
+        stopWatch.resetWatchTime();
+
+        stopSelf();
     }
 
     public static WorkoutService getInstance(){
@@ -187,6 +197,18 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     @Override
     public void step(long timeNs) {
         steps++;
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(WorkoutService.this, "Step Counter: " + steps, Toast.LENGTH_SHORT).show();
+            }
+        });
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(WorkoutFragment.ResponseReceiver.LOCAL_ACTION);
+        String distance = String.format("%.2f",calculateDistance());
+        broadcastIntent.putExtra("Total Distance", distance);
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
+        localBroadcastManager.sendBroadcast(broadcastIntent);
         Log.d(WorkoutService.class.getSimpleName(), "Step Counter: " + steps);
     }
 }

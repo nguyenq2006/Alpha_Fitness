@@ -25,6 +25,7 @@ public class WorkoutRecord {
         this.stepCounter = stepCounter;
         this.totalDistance = totalDistance;
         this.duration = duration;
+        this.caloriesBurned = caloriesBurned;
     }
 
     public WorkoutRecord(){

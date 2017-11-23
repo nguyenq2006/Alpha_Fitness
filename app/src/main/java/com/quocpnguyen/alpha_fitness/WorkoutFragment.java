@@ -15,12 +15,14 @@ import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -146,6 +148,9 @@ public class WorkoutFragment extends Fragment implements LocationSource.OnLocati
             start_bttn.setVisibility(View.INVISIBLE);
             mHandler.post(workoutStartedRunnable);
             drawPolyline();
+            String d = String.format("%.2f", WorkoutService.getInstance().calculateDistance());
+            Toast.makeText(mContext, "total distance: " + d, Toast.LENGTH_SHORT).show();
+            distance_view.setText(d);
         }
     }
 
@@ -171,6 +176,10 @@ public class WorkoutFragment extends Fragment implements LocationSource.OnLocati
 
             String strTime = String.format("%02d:%02d", minutes, seconds);
             time_view.setText(strTime);
+
+            if(minutes%5 == 0 && seconds%60 == 0){
+                WorkoutService.getInstance().stepsCalGraph();
+            }
 
             mHandler.post(this);
         }
@@ -204,7 +213,6 @@ public class WorkoutFragment extends Fragment implements LocationSource.OnLocati
         start_bttn.setVisibility(View.VISIBLE);
 
         mHandler.removeCallbacks(workoutStartedRunnable);
-        stopWatch.resetWatchTime();
 
         getActivity().stopService(new Intent(getActivity(), WorkoutService.class));
         mLocationSource.deactivate();
