@@ -71,12 +71,6 @@ public class WorkoutService extends Service implements LocationListener, Locatio
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(WorkoutService.this, "starting intent service...", Toast.LENGTH_SHORT).show();
-            }
-        });
 
         steps = 0;
         totalDist = 0;
@@ -92,16 +86,6 @@ public class WorkoutService extends Service implements LocationListener, Locatio
         simpleStepDetector.registerListener(this);
 
         sensorManager.registerListener(WorkoutService.this, accel, SensorManager.SENSOR_DELAY_FASTEST);
-
-        if (accel != null)
-        {
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(WorkoutService.this, "found accelerometer", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
 
         return START_STICKY;
 
@@ -141,17 +125,15 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     }
 
     public double calculateDistance(){
-        //TODO: calculate total distance using 2325 steps per mi
-//        totalDist =  steps/2325.0; //2325 avg steps/mi
+        totalDist =  steps/2325.0; //2325 avg steps/mi
 
         //test
-        totalDist = (double) steps/(2325/100);
+//        totalDist = (double) steps/(2325/100);
         return totalDist;
     }
 
     public double calculateCalories(){
-        //TODO remove '*100'
-        return (double) steps*100*23/1000;
+        return (double) steps*23/1000;
     }
 
     public void stepsCalGraph(){
@@ -173,16 +155,14 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     }
 
     public void stopTracking(){
-        Toast.makeText(mContext, "Service Destroyed", Toast.LENGTH_LONG).show();
         locationManager.removeUpdates(WorkoutService.this);
         sensorManager.unregisterListener(WorkoutService.this);
 
         DatabaseManager db = DatabaseManager.getInstance();
 
-        //TODO remove '* 100'
         StopWatch stopWatch = StopWatch.getInstance();
         if(calculateDistance() > 0 && calculateCalories() > 0) {
-            WorkoutRecord data = new WorkoutRecord(steps * 100, calculateDistance(),
+            WorkoutRecord data = new WorkoutRecord(steps, calculateDistance(),
                     stopWatch.getTimeUpdate(), (int) calculateCalories());
             db.insertData(data);
         }
@@ -199,12 +179,6 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     @Override
     public void step(long timeNs) {
         steps++;
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(WorkoutService.this, "Step Counter: " + steps, Toast.LENGTH_SHORT).show();
-            }
-        });
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(WorkoutFragment.ResponseReceiver.LOCAL_ACTION);
         String distance = String.format("%.2f",calculateDistance());

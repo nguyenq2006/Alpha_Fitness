@@ -142,7 +142,6 @@ public class WorkoutFragment extends Fragment implements LocationSource.OnLocati
             mHandler.post(workoutStartedRunnable);
             drawPolyline();
             String d = String.format("%.2f", WorkoutService.getInstance().calculateDistance());
-            Toast.makeText(mContext, "total distance: " + d, Toast.LENGTH_SHORT).show();
             distance_view.setText(d);
         }
 
@@ -150,10 +149,10 @@ public class WorkoutFragment extends Fragment implements LocationSource.OnLocati
         Criteria criteria = new Criteria();
         String provider = locationManager.getBestProvider(criteria, true);
         mLocation = locationManager.getLastKnownLocation(provider);
-        LatLng current = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
-        if(mMap != null) {
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, 15.0f));
-        }
+//        LatLng current = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+//        if(mMap != null) {
+//            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, 15.0f));
+//        }
     }
 
     @Override
@@ -272,9 +271,11 @@ public class WorkoutFragment extends Fragment implements LocationSource.OnLocati
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            Bundle extras = intent.getExtras();
-            String totalDistance = extras.getString("Total Distance");
-            distance_view.setText(totalDistance);
+//            Bundle extras = intent.getExtras();
+//            String totalDistance = extras.getString("Total Distance");
+//            distance_view.setText(totalDistance);
+
+            distance_view.setText(String.format("%.2f", WorkoutService.getInstance().calculateDistance()));
             drawPolyline();
         }
     }
