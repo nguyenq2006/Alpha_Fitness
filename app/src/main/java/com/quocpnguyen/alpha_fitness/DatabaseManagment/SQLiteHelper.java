@@ -62,13 +62,12 @@ public class SQLiteHelper extends SQLiteOpenHelper {
 
     public ArrayList<WorkoutRecord> retrieveData(){
         double max_duration = 0.0;
-        double min_duration = 0.0;
+        double min_duration = 0 ;
 
         SQLiteDatabase db = getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_NAME, null);
         ArrayList<WorkoutRecord> result = new ArrayList<>();
         while (cursor.moveToNext()){
-            cursor.moveToNext();
             WorkoutRecord data = new WorkoutRecord();
             data.setDate(cursor.getString(1));
             data.setTotalDistance(cursor.getDouble(2));
@@ -81,20 +80,25 @@ public class SQLiteHelper extends SQLiteOpenHelper {
                 max_duration = min_per_mi;
             }
 
-            if (min_per_mi < min_duration || min_duration == 0.0){
+            if(min_duration == 0){
+                min_duration =min_per_mi;
+            }else if (min_per_mi < min_duration){
                 min_duration = min_per_mi;
             }
 
             result.add(data);
 
-            DatabaseManager dbManager = DatabaseManager.getInstance();
-            dbManager.setMax_duration(max_duration);
-            dbManager.setMin_duration(min_duration);
-
             GraphData gd = GraphData.getInstance();
             int time = (int) data.getDuration()/60000;
-            gd.addData(5*data.getCaloriesBurned()/time, 5*data.getStepCounter()/time);
+            if(time>0) {
+                gd.addData(5 * data.getCaloriesBurned() / time, 5 * data.getStepCounter() / time);
+            }
         }
+
+        DatabaseManager dbManager = DatabaseManager.getInstance();
+        dbManager.setMax_duration(max_duration);
+        dbManager.setMin_duration(min_duration);
+
         return result;
     }
 }

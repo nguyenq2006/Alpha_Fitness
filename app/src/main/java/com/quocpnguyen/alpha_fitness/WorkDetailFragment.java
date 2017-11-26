@@ -40,7 +40,7 @@ public class WorkDetailFragment extends Fragment implements OnUpdateData {
         lineChart = (LineChart) workout_detail.findViewById(R.id.chart);
         workout_duration = (TextView) workout_detail.findViewById(R.id.workout_duration);
         max_time = (TextView) workout_detail.findViewById(R.id.max_time);
-        min_time = (TextView) workout_detail.findViewById(R.id.max_time);
+        min_time = (TextView) workout_detail.findViewById(R.id.min_time);
 
         workoutService = WorkoutService.getInstance();
 
@@ -68,6 +68,7 @@ public class WorkDetailFragment extends Fragment implements OnUpdateData {
 
             lineDataSets.add(lineDataSet1);
             lineDataSets.add(lineDataSet2);
+
 
             lineChart.setData(new LineData(graphData.getxVal(), lineDataSets));
 

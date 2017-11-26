@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import com.quocpnguyen.alpha_fitness.DatabaseManagment.DatabaseManager;
+
 public class ProfileActivity extends AppCompatActivity {
 
     private TextView avg_disctance;
@@ -34,6 +36,24 @@ public class ProfileActivity extends AppCompatActivity {
         total_time = (TextView)findViewById(R.id.total_time);
         total_workouts = (TextView)findViewById(R.id.total_workouts);
         total_calories = (TextView)findViewById(R.id.total_calories);
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+//  String[] result = {workoutCounter + "", totalDistance + "", totalCaloriesBurned + "", convertMs(totalDuration)};
+        DatabaseManager db = DatabaseManager.getInstance();
+        String[] weeklyAvg = db.findWeeklAvg();
+        avg_disctance.setText(weeklyAvg[1]);
+        avg_time.setText(weeklyAvg[3]);
+        avg_workouts.setText(weeklyAvg[0]);
+        avg_calories.setText(weeklyAvg[2]);
+
+        String[] totalData = db.findTotalData();
+        total_distance.setText(totalData[1]);
+        total_time.setText(totalData[3]);
+        total_workouts.setText(totalData[0]);
+        total_calories.setText(totalData[2]);
     }
 
     @Override

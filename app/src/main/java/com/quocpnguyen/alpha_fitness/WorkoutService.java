@@ -181,9 +181,11 @@ public class WorkoutService extends Service implements LocationListener, Locatio
 
         //TODO remove '* 100'
         StopWatch stopWatch = StopWatch.getInstance();
-        WorkoutRecord data = new WorkoutRecord(steps*100, calculateDistance(),
-                stopWatch.getTimeUpdate(), (int) calculateCalories());
-        db.insertData(data);
+        if(calculateDistance() > 0 && calculateCalories() > 0) {
+            WorkoutRecord data = new WorkoutRecord(steps * 100, calculateDistance(),
+                    stopWatch.getTimeUpdate(), (int) calculateCalories());
+            db.insertData(data);
+        }
 
         stopWatch.resetWatchTime();
 

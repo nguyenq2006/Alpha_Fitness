@@ -104,18 +104,19 @@ public class WorkoutFragment extends Fragment implements LocationSource.OnLocati
             }
         });
 
-        if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
-
-        }
-
         // Get the SupportMapFragment and request notification
         // when the map is ready to be used.
         mapView = (MapView) workout_detail.findViewById(R.id.map);
         mapView.onCreate(savedInstanceState);
         mapView.onResume();
         mapView.getMapAsync(new MapListener());
+
+        if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
+
+        }
+
         return workout_detail;
     }
 
@@ -126,15 +127,7 @@ public class WorkoutFragment extends Fragment implements LocationSource.OnLocati
         mHandler = new android.os.Handler();
         stopWatch = StopWatch.getInstance();
 
-        ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
-        locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
-        provider = locationManager.getBestProvider(new Criteria(), true);
 //        locationTracking = new ArrayList<>();
-
-        LocationManager locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-        String provider = locationManager.getBestProvider(criteria, true);
-        mLocation = locationManager.getLastKnownLocation(provider);
     }
 
     @Override
@@ -151,6 +144,15 @@ public class WorkoutFragment extends Fragment implements LocationSource.OnLocati
             String d = String.format("%.2f", WorkoutService.getInstance().calculateDistance());
             Toast.makeText(mContext, "total distance: " + d, Toast.LENGTH_SHORT).show();
             distance_view.setText(d);
+        }
+
+        LocationManager locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        String provider = locationManager.getBestProvider(criteria, true);
+        mLocation = locationManager.getLastKnownLocation(provider);
+        LatLng current = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+        if(mMap != null) {
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, 15.0f));
         }
     }
 
@@ -230,6 +232,14 @@ public class WorkoutFragment extends Fragment implements LocationSource.OnLocati
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION && grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
+            locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
+            provider = locationManager.getBestProvider(new Criteria(), true);
+
+            LocationManager locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
+            Criteria criteria = new Criteria();
+            String provider = locationManager.getBestProvider(criteria, true);
+            mLocation = locationManager.getLastKnownLocation(provider);
         }
     }
 

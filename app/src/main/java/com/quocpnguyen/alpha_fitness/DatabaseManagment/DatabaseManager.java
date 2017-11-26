@@ -65,33 +65,37 @@ public class DatabaseManager {
     }
 
     public String[] findTotalData() {
-        int totalStepCounter = 0;
+        int workoutCounter = 0;
         double totalDistance = 0;
         int totalCaloriesBurned = 0;
         long totalDuration = 0;
         for (WorkoutRecord record : workoutData) {
-            totalStepCounter += record.getStepCounter();
+            workoutCounter++;
             totalDistance += record.getTotalDistance();
             totalCaloriesBurned += record.getCaloriesBurned();
             totalDuration += record.getDuration();
         }
 
-        String[] result = {totalStepCounter + "", totalDistance + "", totalCaloriesBurned + "", convertMs(totalDuration)};
+        String[] result = {workoutCounter + "",
+                String.format("%.2f",totalDistance),
+                totalCaloriesBurned + "",
+                convertMs(totalDuration)};
         return result;
     }
 
     public String[] findWeeklAvg() {
-        int totalStepCounter = 0;
+        int workoutCounter = 0;
         double totalDistance = 0;
         int totalCaloriesBurned = 0;
         long totalDuration = 0;
         Date startDate = null;
+        int weekCounter = 1;
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         try {
             for (WorkoutRecord record : workoutData) {
-                totalStepCounter += record.getStepCounter();
+                workoutCounter++;
                 totalDistance += record.getTotalDistance();
                 totalCaloriesBurned += record.getCaloriesBurned();
                 totalDuration += record.getDuration();
@@ -101,13 +105,18 @@ public class DatabaseManager {
 
                 if (startDate == null) {
                     startDate = recordedDate;
-
-                } //TODO week calculatio logic
+                } else if (dayDifference(startDate, recordedDate) >= 7) {
+                    weekCounter++;
+                }
             }
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        String[] result = {totalStepCounter + "", totalDistance + "", totalCaloriesBurned + "", convertMs(totalDuration)};
+
+        String[] result = {workoutCounter / weekCounter + "",
+                String.format("%.2f",totalDistance / weekCounter),
+                totalCaloriesBurned / weekCounter + "",
+                convertMs(totalDuration / weekCounter)};
         return result;
     }
 
@@ -147,6 +156,18 @@ public class DatabaseManager {
         }
         text.append(ms + " ms");
         return text.toString();
+    }
+
+    private long dayDifference(Date startDate, Date endDate) {
+        //milliseconds
+        long different = endDate.getTime() - startDate.getTime();
+
+        System.out.println("startDate : " + startDate);
+        System.out.println("endDate : " + endDate);
+        System.out.println("different : " + different);
+
+        return different / DAY;
+
     }
 
 }
