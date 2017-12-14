@@ -15,11 +15,14 @@ import android.os.SystemClock;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -33,16 +36,18 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import static android.content.Context.LOCATION_SERVICE;
 
 
-public class WorkoutActivity extends Fragment implements LocationSource.OnLocationChangedListener{
+public class WorkoutFragment extends Fragment implements LocationSource.OnLocationChangedListener{
     private Context mContext;
     //reference to component view
     private TextView distance_view;
     private TextView time_view;
     private Button start_bttn;
     private Button stop_bttn;
+    private MapView mapView;
+    private ImageView imageView;
 
     //variable for map view
-    private GoogleMap mMap;
+    private static GoogleMap mMap;
     private LocationManager locationManager;
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 20;
     private String provider;
@@ -70,15 +75,24 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View workout_detail = inflater.inflate(R.layout.activity_workout, container, false);
+        View workout_detail = inflater.inflate(R.layout.workout_fragment, container, false);
         mContext = workout_detail.getContext();
         distance_view = (TextView) workout_detail.findViewById(R.id.distance);
         time_view = (TextView) workout_detail.findViewById(R.id.time_view);
+
+        imageView = (ImageView) workout_detail.findViewById(R.id.profile);
+        imageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getActivity(), ProfileActivity.class);
+                getActivity().startActivity(intent);
+            }
+        });
         start_bttn = (Button) workout_detail.findViewById(R.id.start_bttn);
         start_bttn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startStopWatch();
+                startWorkout();
             }
         });
 
@@ -86,9 +100,16 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
         stop_bttn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                stopStopWatch();
+                stopWorkout();
             }
         });
+
+        // Get the SupportMapFragment and request notification
+        // when the map is ready to be used.
+        mapView = (MapView) workout_detail.findViewById(R.id.map);
+        mapView.onCreate(savedInstanceState);
+        mapView.onResume();
+        mapView.getMapAsync(new MapListener());
 
         if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
@@ -96,12 +117,6 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
 
         }
 
-        // Get the SupportMapFragment and request notification
-        // when the map is ready to be used.
-        MapView mapView = (MapView) workout_detail.findViewById(R.id.map);
-        mapView.onCreate(savedInstanceState);
-        mapView.onResume();
-        mapView.getMapAsync(new MapListener());
         return workout_detail;
     }
 
@@ -112,26 +127,32 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
         mHandler = new android.os.Handler();
         stopWatch = StopWatch.getInstance();
 
-        ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
-        locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
-        provider = locationManager.getBestProvider(new Criteria(), true);
 //        locationTracking = new ArrayList<>();
-
-        LocationManager locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-        String provider = locationManager.getBestProvider(criteria, true);
-        mLocation = locationManager.getLastKnownLocation(provider);
     }
 
     @Override
     public void onResume(){
         super.onResume();
-        IntentFilter broadcastFilter = new IntentFilter(ResponseReceiver.LOCAL_ACTION);
-        receiver = new ResponseReceiver();
-        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(mContext);
-        localBroadcastManager.registerReceiver(receiver, broadcastFilter);
 
+        if(stopWatch.isRunning()){
+            stop_bttn.setEnabled(true);
+            start_bttn.setEnabled(false);
+            stop_bttn.setVisibility(View.VISIBLE);
+            start_bttn.setVisibility(View.INVISIBLE);
+            mHandler.post(workoutStartedRunnable);
+            drawPolyline();
+            String d = String.format("%.2f", WorkoutService.getInstance().calculateDistance());
+            distance_view.setText(d);
+        }
 
+        LocationManager locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        String provider = locationManager.getBestProvider(criteria, true);
+        mLocation = locationManager.getLastKnownLocation(provider);
+//        LatLng current = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+//        if(mMap != null) {
+//            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current, 15.0f));
+//        }
     }
 
     @Override
@@ -157,12 +178,16 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
             String strTime = String.format("%02d:%02d", minutes, seconds);
             time_view.setText(strTime);
 
+            if(minutes%5 == 0 && seconds%60 == 0){
+                WorkoutService.getInstance().stepsCalGraph();
+            }
+
             mHandler.post(this);
         }
     };
 
 
-    public void startStopWatch(){
+    public void startWorkout(){
         stop_bttn.setEnabled(true);
         start_bttn.setEnabled(false);
         stop_bttn.setVisibility(View.VISIBLE);
@@ -176,16 +201,19 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
         getActivity().startService(workoutService);
 
         mLocationSource.activate(this);
+        receiver = new ResponseReceiver();
+        IntentFilter broadcastFilter = new IntentFilter(ResponseReceiver.LOCAL_ACTION);
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(mContext);
+        localBroadcastManager.registerReceiver(receiver, broadcastFilter);
     }
 
-    public void stopStopWatch(){
+    public void stopWorkout(){
         stop_bttn.setEnabled(false);
         start_bttn.setEnabled(true);
         stop_bttn.setVisibility(View.INVISIBLE);
         start_bttn.setVisibility(View.VISIBLE);
 
         mHandler.removeCallbacks(workoutStartedRunnable);
-        stopWatch.resetWatchTime();
 
         getActivity().stopService(new Intent(getActivity(), WorkoutService.class));
         mLocationSource.deactivate();
@@ -195,12 +223,22 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
         WorkoutService.initializeService(mContext);
         Intent workoutService = new Intent(getActivity(), WorkoutService.class);
         getActivity().stopService(workoutService);
+
+        receiver = null;
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         if (requestCode == MY_PERMISSIONS_REQUEST_LOCATION && grantResults.length > 0
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSIONS_REQUEST_LOCATION);
+            locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
+            provider = locationManager.getBestProvider(new Criteria(), true);
+
+            LocationManager locationManager = (LocationManager) getActivity().getSystemService(LOCATION_SERVICE);
+            Criteria criteria = new Criteria();
+            String provider = locationManager.getBestProvider(criteria, true);
+            mLocation = locationManager.getLastKnownLocation(provider);
         }
     }
 
@@ -233,9 +271,11 @@ public class WorkoutActivity extends Fragment implements LocationSource.OnLocati
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            Bundle extras = intent.getExtras();
-            String totalDistance = extras.getString("Total Distance");
-            distance_view.setText(totalDistance);
+//            Bundle extras = intent.getExtras();
+//            String totalDistance = extras.getString("Total Distance");
+//            distance_view.setText(totalDistance);
+
+            distance_view.setText(String.format("%.2f", WorkoutService.getInstance().calculateDistance()));
             drawPolyline();
         }
     }

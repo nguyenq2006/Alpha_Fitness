@@ -10,6 +10,7 @@ public class StopWatch {
     private long mStartTime;
     private long mTimeUpdate;
     private long mStoreTime;
+    private boolean isRunning;
 
     private StopWatch(){
         mStartTime = 0L;
@@ -22,9 +23,10 @@ public class StopWatch {
     }
 
     public void resetWatchTime(){
-        mStartTime = 0L;
-        mTimeUpdate = 0L;
-        mStoreTime = 0L;
+        stopWatch.mStartTime = 0L;
+        stopWatch.mTimeUpdate = 0L;
+        stopWatch.mStoreTime = 0L;
+        stopWatch.isRunning=false;
     }
 
     public long getStartTime() {
@@ -32,22 +34,27 @@ public class StopWatch {
     }
 
     public void setStartTime(long mStartTime) {
-        this.mStartTime = mStartTime;
+        stopWatch.mStartTime = mStartTime;
+        stopWatch.isRunning=true;
     }
 
     public long getStoreTime() {
-        return mStoreTime;
+        return  stopWatch.mStoreTime;
     }
 
     public void addStoreTime(long mStoreTime) {
-        this.mStoreTime += mStoreTime;
+        stopWatch.mStoreTime += mStoreTime;
     }
 
     public long getTimeUpdate() {
-        return mTimeUpdate;
+        return  stopWatch.mTimeUpdate;
     }
 
     public void setTimeUpdate(long mTimeUpdate) {
-        this.mTimeUpdate = mTimeUpdate;
+        stopWatch.mTimeUpdate = mTimeUpdate;
+    }
+
+    public boolean isRunning() {
+        return  stopWatch.isRunning;
     }
 }

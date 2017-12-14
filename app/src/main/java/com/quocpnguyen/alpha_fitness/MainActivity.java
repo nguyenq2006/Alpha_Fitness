@@ -9,8 +9,9 @@ import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 
 import com.google.android.gms.maps.GoogleMap;
+import com.quocpnguyen.alpha_fitness.DatabaseManagment.DatabaseManager;
 
-public class MainActivity extends AppCompatActivity{
+public class MainActivity extends AppCompatActivity {
 
     private GoogleMap mMap;
     private LocationManager locationManager;
@@ -24,34 +25,22 @@ public class MainActivity extends AppCompatActivity{
         FragmentManager fm = getSupportFragmentManager();
         Fragment fragment = fm.findFragmentById(R.id.fragmentContainer);
 
-        if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            if (fragment == null) {
-                Fragment workoutDetail = new WorkDetailFragment();
-                fm.beginTransaction()
-                        .replace(R.id.fragmentContainer, workoutDetail)
-                        .commit();
-            } else {
-                Fragment workoutDetail = new WorkDetailFragment();
-                fm.beginTransaction()
-                        .replace(R.id.fragmentContainer, workoutDetail)
-                        .commit();
-            }
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+
+            Fragment workoutDetail = new WorkDetailFragment();
+            fm.beginTransaction()
+                    .replace(R.id.fragmentContainer, workoutDetail)
+                    .commit();
 
         } else {
 
-            if (fragment == null) {
-                Fragment recordWorkout = new WorkoutActivity();
-                fm.beginTransaction()
-                        .replace(R.id.fragmentContainer, recordWorkout)
-                        .commit();
-            } else {
-                Fragment recordWorkout = new WorkoutActivity();
-                fm.beginTransaction()
-                        .replace(R.id.fragmentContainer, recordWorkout)
-                        .commit();
-            }
-        }
+            Fragment recordWorkout = new WorkoutFragment();
+            fm.beginTransaction()
+                    .replace(R.id.fragmentContainer, recordWorkout)
+                    .commit();
 
+        }
+        DatabaseManager.getInstance().initializeDatabase(this);
 
 
     }

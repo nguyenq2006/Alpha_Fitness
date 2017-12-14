@@ -1,11 +1,8 @@
 package com.quocpnguyen.alpha_fitness;
 
-import android.Manifest;
-import android.app.IntentService;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -18,18 +15,17 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdate;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.LocationSource;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Polyline;
+import com.quocpnguyen.alpha_fitness.DatabaseManagment.DatabaseManager;
+import com.quocpnguyen.alpha_fitness.DatabaseManagment.WorkoutRecord;
+import com.quocpnguyen.alpha_fitness.GraphUtil.GraphData;
+import com.quocpnguyen.alpha_fitness.StepCounterUtil.StepDetector;
+import com.quocpnguyen.alpha_fitness.StepCounterUtil.StepListener;
 
 import java.util.ArrayList;
 
@@ -37,25 +33,27 @@ import java.util.ArrayList;
  * Created by cs on 10/28/17.
  */
 
-public class WorkoutService extends Service implements LocationListener, LocationSource.OnLocationChangedListener, SensorEventListener {
+public class WorkoutService extends Service implements LocationListener, LocationSource.OnLocationChangedListener, SensorEventListener, StepListener {
 
-    private LocationManager locationManager;
+    private static WorkoutService workoutService;
+    private static LocationManager locationManager;
     private String provider;
     public static ArrayList<LatLng> locationTracking;
     private static Context mContext;
     private Handler mHandler;
 
-    private static float totalDist;
-    private long steps = 0;
-    private Sensor stepSensor;
-    private SensorManager sManager;
-    private static WorkoutService workoutService;
+    private double totalDist;
+    private static int steps;
+
+
+    private StepDetector simpleStepDetector;
+    private static SensorManager sensorManager;
+    private Sensor accel;
 
 
 
     public static void initializeService(Context context){
         WorkoutService.mContext = context;
-        totalDist = 0;
         workoutService = new WorkoutService();
     }
 
@@ -63,7 +61,6 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     public void onCreate() {
         super.onCreate();
         mHandler = new Handler();
-        locationTracking = new ArrayList<>();
     }
 
     @Nullable
@@ -74,36 +71,21 @@ public class WorkoutService extends Service implements LocationListener, Locatio
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(WorkoutService.this, "starting intent service...", Toast.LENGTH_SHORT).show();
-            }
-        });
 
+        steps = 0;
+        totalDist = 0;
+        locationTracking = new ArrayList<>();
         locationManager = (LocationManager) mContext.getSystemService(LOCATION_SERVICE);
         provider = locationManager.getBestProvider(new Criteria(), true);
+
         locationManager.requestLocationUpdates(provider, 0, 0, WorkoutService.this);
 
-        sManager = (SensorManager) mContext.getSystemService(Context.SENSOR_SERVICE);
-        stepSensor = sManager.getDefaultSensor(Sensor.TYPE_STEP_DETECTOR);
-//        if(stepSensor != null) {
-//            sManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_FASTEST);
-//        } else {
-//            stepSensor = sManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
-//
-//        }
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        simpleStepDetector = new StepDetector();
+        simpleStepDetector.registerListener(this);
 
-        PackageManager packageManager = mContext.getPackageManager();
-        if(!(packageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_STEP_COUNTER)
-                && packageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_STEP_DETECTOR))){
-            mHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(WorkoutService.this, "cannot find step detector sensor, nor step counter sensor", Toast.LENGTH_SHORT).show();
-                }
-            });
-        }
+        sensorManager.registerListener(WorkoutService.this, accel, SensorManager.SENSOR_DELAY_FASTEST);
 
         return START_STICKY;
 
@@ -118,21 +100,12 @@ public class WorkoutService extends Service implements LocationListener, Locatio
     @Override
     public void onLocationChanged(Location location) {
 
-//        if (WorkoutActivity.mListener != null) {
-//            WorkoutActivity.mListener.onLocationChanged(location);
-//        }
 
         double latitude = location.getLatitude();
         double longtitude = location.getLongitude();
         LatLng point = new LatLng(latitude, longtitude);
         if(!locationTracking.contains(point)){
             locationTracking.add(point);
-            Intent broadcastIntent = new Intent();
-            broadcastIntent.setAction(WorkoutActivity.ResponseReceiver.LOCAL_ACTION);
-            String distance = String.format("%.2f",calculateDistance());
-            broadcastIntent.putExtra("Total Distance", distance);
-            LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
-            localBroadcastManager.sendBroadcast(broadcastIntent);
         }
     }
 
@@ -151,32 +124,29 @@ public class WorkoutService extends Service implements LocationListener, Locatio
 
     }
 
-    private double calculateDistance(){
-        int size = locationTracking.size();
-        if(size > 2){
-            float[] result = new float[2];
-            LatLng prev = locationTracking.get(size-2);
-            LatLng cur = locationTracking.get(size-1);
-            Location.distanceBetween(prev.latitude, prev.longitude, cur.latitude, cur.longitude, result);
-            totalDist += result[0];
-        }
-        return toMiles(totalDist);
+    public double calculateDistance(){
+        totalDist =  steps/2325.0; //2325 avg steps/mi
+
+        //test
+//        totalDist = (double) steps/(2325/100);
+        return totalDist;
+    }
+
+    public double calculateCalories(){
+        return (double) steps*23/1000;
+    }
+
+    public void stepsCalGraph(){
+        GraphData graph = GraphData.getInstance();
+        graph.addData(calculateCalories(), steps);
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        Sensor sensor = event.sensor;
-
-        if (sensor.getType() == Sensor.TYPE_STEP_DETECTOR) {
-            steps++;
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            simpleStepDetector.updateAccel(
+                    event.timestamp, event.values[0], event.values[1], event.values[2]);
         }
-        Log.d(WorkoutService.class.getSimpleName(), "steps counter = " + steps);
-        mHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(WorkoutService.this, "Steps count: " + steps, Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     @Override
@@ -184,17 +154,37 @@ public class WorkoutService extends Service implements LocationListener, Locatio
 
     }
 
-    private double toMiles(float meter){
-        return (double) (meter/1609.344);
-    }
-
     public void stopTracking(){
-        Toast.makeText(this, "Service Destroyed", Toast.LENGTH_LONG).show();
         locationManager.removeUpdates(WorkoutService.this);
-        sManager.unregisterListener(this, stepSensor);
+        sensorManager.unregisterListener(WorkoutService.this);
+
+        DatabaseManager db = DatabaseManager.getInstance();
+
+        StopWatch stopWatch = StopWatch.getInstance();
+        if(calculateDistance() > 0 && calculateCalories() > 0) {
+            WorkoutRecord data = new WorkoutRecord(steps, calculateDistance(),
+                    stopWatch.getTimeUpdate(), (int) calculateCalories());
+            db.insertData(data);
+        }
+
+        stopWatch.resetWatchTime();
+
+        stopSelf();
     }
 
     public static WorkoutService getInstance(){
         return workoutService;
+    }
+
+    @Override
+    public void step(long timeNs) {
+        steps++;
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.setAction(WorkoutFragment.ResponseReceiver.LOCAL_ACTION);
+        String distance = String.format("%.2f",calculateDistance());
+        broadcastIntent.putExtra("Total Distance", distance);
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
+        localBroadcastManager.sendBroadcast(broadcastIntent);
+        Log.d(WorkoutService.class.getSimpleName(), "Step Counter: " + steps);
     }
 }
